@@ -22,16 +22,13 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
         $this->attendances = $attendances;
     }
 
-    /**
-     * Return collection of data
-     */
     public function collection()
     {
         return $this->attendances;
     }
 
     /**
-     * Define headings
+     * Headings (Status dihapus)
      */
     public function headings(): array
     {
@@ -43,13 +40,12 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             'Nama',
             'Kategori Makan',
             'Jumlah',
-            'Status',
             'Saran'
         ];
     }
 
     /**
-     * Map data for each row
+     * Map row data (Status dihapus)
      */
     public function map($attendance): array
     {
@@ -64,14 +60,10 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             $attendance->employee->name ?? '-',
             $this->getMealTypeLabel($attendance->meal_type),
             $attendance->quantity,
-            ucfirst($attendance->status),
             $attendance->remarks ?? '-'
         ];
     }
 
-    /**
-     * Get meal type label in Indonesian
-     */
     private function getMealTypeLabel($mealType): string
     {
         $labels = [
@@ -84,30 +76,29 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
     }
 
     /**
-     * Define column widths
+     * Update column widths (Status "H" dihapus, Saran pindah ke "H")
      */
     public function columnWidths(): array
     {
         return [
-            'A' => 6,   // No
-            'B' => 12,  // Tanggal
-            'C' => 10,  // Waktu
-            'D' => 15,  // NIK
-            'E' => 25,  // Nama
-            'F' => 15,  // Kategori
-            'G' => 10,  // Jumlah
-            'H' => 12,  // Status
-            'I' => 30,  // Saran
+            'A' => 6,
+            'B' => 12,
+            'C' => 10,
+            'D' => 15,
+            'E' => 25,
+            'F' => 15,
+            'G' => 10,
+            'H' => 30, // Saran
         ];
     }
 
     /**
-     * Apply styles to worksheet
+     * Styling (ubah range A1:H... dari sebelumnya A1:I...)
      */
     public function styles(Worksheet $sheet)
     {
-        // Style for header row
-        $sheet->getStyle('A1:I1')->applyFromArray([
+        // Header style
+        $sheet->getStyle('A1:H1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -115,7 +106,7 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '4472C4'], // Blue background
+                'startColor' => ['rgb' => '4472C4'],
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -124,16 +115,14 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000'],
                 ],
             ],
         ]);
 
-        // Get last row number
         $lastRow = $sheet->getHighestRow();
 
-        // Style for all data cells
-        $sheet->getStyle('A1:I' . $lastRow)->applyFromArray([
+        // Global borders
+        $sheet->getStyle('A1:H' . $lastRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
@@ -142,27 +131,22 @@ class AttendanceExport implements FromCollection, WithHeadings, WithMapping, Wit
             ],
         ]);
 
-        // Center align for specific columns
+        // Center alignment for specific columns
         $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('B2:B' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('C2:C' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('D2:D' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('F2:F' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('G2:G' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('H2:H' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Set row height for header
+        // Wrap text for Saran column
+        $sheet->getStyle('H2:H' . $lastRow)->getAlignment()->setWrapText(true);
+
         $sheet->getRowDimension(1)->setRowHeight(25);
-
-        // Auto-wrap text for Saran column
-        $sheet->getStyle('I2:I' . $lastRow)->getAlignment()->setWrapText(true);
 
         return [];
     }
 
-    /**
-     * Define sheet title
-     */
     public function title(): string
     {
         return 'Laporan Absensi';
