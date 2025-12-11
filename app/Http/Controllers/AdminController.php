@@ -247,52 +247,13 @@ class AdminController extends Controller
                              ->orderBy('attendance_time', 'desc')
                              ->get();
 
-        // Generate CSV
-        $filename = 'attendance_report_' . now()->format('Y-m-d_His') . '.csv';
+        // Generate Excel file
+        $filename = 'Laporan_Absensi_' . now()->format('Y-m-d_His') . '.xlsx';
         
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
-
-        $callback = function() use ($attendances) {
-            $file = fopen('php://output', 'w');
-            
-            // UTF-8 BOM for Excel
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
-            // Header
-            fputcsv($file, [
-                'No',
-                'Tanggal',
-                'Waktu',
-                'NIK',
-                'Nama',
-                'Kategori Makan',
-                'Jumlah',
-                'Status',
-                'Similarity Score'
-            ]);
-
-            // Data
-            foreach ($attendances as $index => $attendance) {
-                fputcsv($file, [
-                    $index + 1,
-                    $attendance->attendance_date->format('d/m/Y'),
-                    $attendance->attendance_time->format('H:i:s'),
-                    $attendance->nik,
-                    $attendance->employee->name ?? '-',
-                    ucfirst($attendance->meal_type),
-                    $attendance->quantity,
-                    ucfirst($attendance->status),
-                    $attendance->similarity_score ? number_format($attendance->similarity_score * 100, 2) . '%' : '-'
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\AttendanceExport($attendances),
+            $filename
+        );
     }
 
     private function applyDateFilter($query, $request)
